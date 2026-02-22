@@ -9,9 +9,4 @@ supabase==2.6.0
 
 langfuse==2.40.0
 
-# Embeddings option A (local, zero-cost-ish)
-sentence-transformers==3.0.1
-torch>=2.1.0
-
-# If you prefer OpenAI embeddings instead, you can remove sentence-transformers+torch
-# and add openai>=1.40.0
+openai>=1.40.0

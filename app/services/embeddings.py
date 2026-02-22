@@ -1,18 +1,26 @@
 from typing import List
 from app.core.config import settings
+from openai import AsyncOpenAI
 
-# Local embeddings (recommended for quick MVP + no extra API key)
-from sentence_transformers import SentenceTransformer
+_client = None
 
-_model = None
+def _get_client() -> AsyncOpenAI:
+    global _client
+    if _client is None:
+        if not settings.OPENAI_API_KEY:
+            raise RuntimeError("OPENAI_API_KEY is required when EMBEDDINGS_PROVIDER=openai")
+        _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+    return _client
 
-def _get_model():
-    global _model
-    if _model is None:
-        _model = SentenceTransformer(settings.LOCAL_EMBEDDING_MODEL)
-    return _model
-
-def embed_texts(texts: List[str]) -> List[List[float]]:
-    model = _get_model()
-    vectors = model.encode(texts, normalize_embeddings=True).tolist()
-    return vectors
+async def embed_texts(texts: List[str]) -> List[List[float]]:
+    """
+    OpenAI embeddings (no torch).
+    Model: text-embedding-3-small (1536 dims).
+    """
+    client = _get_client()
+    resp = await client.embeddings.create(
+        model=settings.OPENAI_EMBED_MODEL,
+        input=texts,
+    )
+    # resp.data is list in same order
+    return [item.embedding for item in resp.data]

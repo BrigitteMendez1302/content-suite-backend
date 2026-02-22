@@ -17,8 +17,10 @@ class Settings(BaseSettings):
     LANGFUSE_HOST: str = "https://cloud.langfuse.com"
 
     # Embeddings
-    EMBEDDINGS_PROVIDER: str = "local"  # "local" | "openai"
-    LOCAL_EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
-    EMBEDDING_DIM: int = 384
+    EMBEDDINGS_PROVIDER: str = "openai"
+    EMBEDDING_DIM: int = 1536
+
+    OPENAI_API_KEY: str | None = None
+    OPENAI_EMBED_MODEL: str = "text-embedding-3-small"
 
 settings = Settings()

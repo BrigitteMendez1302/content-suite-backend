@@ -66,7 +66,7 @@ async def create_manual(brand_id: str, body: dict):
     chunk_texts = [c["chunk_text"] for c in chunks]
 
     emb_span = trace.span(name="embeddings.embed_chunks", input={"n": len(chunk_texts)})
-    vectors = embed_texts(chunk_texts)
+    vectors = await embed_texts(chunk_texts)
     emb_span.end(output={"n": len(vectors)})
 
     # 5) Persist chunks
@@ -80,7 +80,7 @@ async def create_manual(brand_id: str, body: dict):
             "embedding": v,
             "metadata": c["metadata"],
         })
-    cres = sb.table("brand_manual_chunks").insert(payload).execute()
+    cres = sb.table("brand_manual_chunks_openai").insert(payload).execute()
     if not cres.data:
         ins_span.end(output={"inserted": False})
         trace.end(output={"error": "chunk_insert_failed"})
