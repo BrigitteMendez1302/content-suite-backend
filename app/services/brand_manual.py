@@ -1,0 +1,49 @@
+from typing import Dict, Any
+from app.services.groq_llm import groq_chat
+
+MANUAL_SYSTEM = (
+    "Eres un Brand DNA Architect. "
+    "Devuelve SOLO JSON válido (sin markdown). "
+    "No inventes hechos del producto; si falta info usa 'assumptions'."
+)
+
+def build_manual_prompt(params: Dict[str, Any]) -> str:
+    product = params["product"]
+    tone = params["tone"]
+    audience = params["audience"]
+    brand_name = params.get("brand_name", product)
+
+    extra = params.get("extra_constraints", "")
+
+    schema_hint = """
+Devuelve un JSON con estas claves:
+brand_name, product, audience,
+tone{description,dos[],donts[]},
+messaging{value_props[],taglines[],forbidden_claims[],preferred_terms[],forbidden_terms[]},
+style_rules{reading_level,length_guidelines},
+visual_guidelines{colors[],logo_rules[],typography[],image_style[],notes},
+examples{good[{type,text}],bad[{type,text,why}]},
+approval_checklist[], assumptions[].
+"""
+    return f"""
+Parámetros:
+- brand_name: {brand_name}
+- product: {product}
+- tone: {tone}
+- audience: {audience}
+- extra_constraints: {extra}
+
+{schema_hint}
+
+Reglas:
+- Sé específico en dos/donts y forbidden_terms.
+- Si no tienes guías visuales, deja listas vacías y explica en visual_guidelines.notes.
+- Incluye 2 ejemplos good y 2 bad (con "why").
+"""
+
+async def generate_brand_manual(params: Dict[str, Any]) -> str:
+    messages = [
+        {"role": "system", "content": MANUAL_SYSTEM},
+        {"role": "user", "content": build_manual_prompt(params)},
+    ]
+    return await groq_chat(messages)

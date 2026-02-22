@@ -1,0 +1,17 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.8.2
+pydantic-settings==2.4.0
+httpx==0.27.2
+python-dotenv==1.0.1
+
+supabase==2.6.0
+
+langfuse==2.40.0
+
+# Embeddings option A (local, zero-cost-ish)
+sentence-transformers==3.0.1
+torch>=2.1.0
+
+# If you prefer OpenAI embeddings instead, you can remove sentence-transformers+torch
+# and add openai>=1.40.0
