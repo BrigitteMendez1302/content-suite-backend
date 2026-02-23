@@ -1,6 +1,7 @@
 import time
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Literal
+from pydantic import BaseModel
+from typing import Literal
 from app.db.supabase_client import get_supabase
 from app.core.langfuse_client import langfuse
 from app.services.embeddings import embed_texts
