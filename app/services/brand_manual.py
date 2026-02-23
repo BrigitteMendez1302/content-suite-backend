@@ -3,8 +3,14 @@ from app.services.groq_llm import groq_chat
 
 MANUAL_SYSTEM = (
     "Eres un Brand DNA Architect. "
-    "Devuelve SOLO JSON válido (sin markdown). "
-    "No inventes hechos del producto; si falta info usa 'assumptions'."
+    "Devuelve SOLO JSON válido, sin markdown, sin explicaciones. "
+    "Respeta TIPOS estrictamente:\n"
+    "- tone.dos/donts: arrays de strings\n"
+    "- messaging.*: arrays de strings\n"
+    "- style_rules.reading_level: SOLO 'simple' o 'medium'\n"
+    "- style_rules.length_guidelines: objeto/dict\n"
+    "- visual_guidelines.*: arrays de strings\n"
+    "Si no tienes información, devuelve listas vacías o {} (NO strings)."
 )
 
 def build_manual_prompt(params: Dict[str, Any]) -> str:

@@ -8,6 +8,7 @@ from app.utils.json_repair import extract_json
 from app.services.chunking import chunk_manual
 from app.services.embeddings import embed_texts
 from app.core.langfuse_client import langfuse
+from app.services.manual_normalize import normalize_manual_dict
 
 router = APIRouter(prefix="/brands", tags=["brands"])
 
@@ -28,6 +29,12 @@ async def create_manual(brand_id: str, body: dict):
     trace = langfuse.trace(name="module1.brand_dna.create_manual", input=body)
     t0 = time.time()
 
+    def safe_trace_update(payload: dict):
+        try:
+            trace.update(output=payload)
+        except Exception:
+            pass
+
     # 1) LLM generate manual JSON
     gen_span = trace.span(name="groq.generate_manual")
     try:
@@ -35,18 +42,19 @@ async def create_manual(brand_id: str, body: dict):
         gen_span.end(output={"raw_len": len(raw)})
     except Exception as e:
         gen_span.end(output={"error": str(e)})
-        trace.end(output={"error": "groq_failed"})
+        safe_trace_update({"error": "groq_failed", "detail": str(e)})
         raise
 
     # 2) Parse + validate
     parse_span = trace.span(name="validate.manual_json")
     try:
         parsed = extract_json(raw)
+        parsed = normalize_manual_dict(parsed)
         manual = BrandManual.model_validate(parsed).model_dump()
         parse_span.end(output={"validated": True})
     except Exception as e:
         parse_span.end(output={"validated": False, "error": str(e)})
-        trace.end(output={"error": "invalid_json"})
+        safe_trace_update({"error": "invalid_json", "detail": str(e)})
         raise HTTPException(status_code=422, detail=f"Invalid manual JSON: {e}")
 
     # 3) Persist manual
@@ -55,7 +63,7 @@ async def create_manual(brand_id: str, body: dict):
     res = sb.table("brand_manuals").insert({"brand_id": brand_id, "manual_json": manual}).execute()
     if not res.data:
         db_span.end(output={"inserted": False})
-        trace.end(output={"error": "db_insert_failed"})
+        safe_trace_update({"error": "db_insert_failed"})
         raise HTTPException(status_code=500, detail="Failed to save manual")
     manual_row = res.data[0]
     manual_id = manual_row["id"]
@@ -80,15 +88,16 @@ async def create_manual(brand_id: str, body: dict):
             "embedding": v,
             "metadata": c["metadata"],
         })
+
     cres = sb.table("brand_manual_chunks_openai").insert(payload).execute()
     if not cres.data:
         ins_span.end(output={"inserted": False})
-        trace.end(output={"error": "chunk_insert_failed"})
+        safe_trace_update({"error": "chunk_insert_failed"})
         raise HTTPException(status_code=500, detail="Failed to save manual chunks")
     ins_span.end(output={"inserted": True, "chunks": len(cres.data)})
 
     latency_ms = int((time.time() - t0) * 1000)
-    trace.end(output={"manual_id": manual_id, "chunks": len(cres.data), "latency_ms": latency_ms})
+    safe_trace_update({"manual_id": manual_id, "chunks": len(cres.data), "latency_ms": latency_ms})
 
     return {
         "brand_id": brand_id,
