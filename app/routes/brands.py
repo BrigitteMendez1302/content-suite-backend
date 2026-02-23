@@ -127,3 +127,15 @@ def get_latest_manual(brand_id: str):
     if not res.data:
         raise HTTPException(status_code=404, detail="No manual found for brand")
     return res.data[0]
+
+@router.get("")
+def list_brands():
+    sb = get_supabase()
+    res = (
+        sb.table("brands")
+        .select("id, name, created_at")
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    return res.data or []
