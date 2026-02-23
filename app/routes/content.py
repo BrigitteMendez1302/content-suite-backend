@@ -120,8 +120,24 @@ async def generate(req: GenerateRequest):
         safe_update({"error": "rag_insufficient", "chunks": len(rag_chunks)})
         raise HTTPException(status_code=422, detail="RAG insuficiente: no se recuperó contexto suficiente del manual.")
 
-    # 4) Build prompt and generate with Groq
+    # 4) Build prompt (final) and log it BEFORE generation
     prompt_msgs = build_generation_prompt(req.type, req.brief, rag_chunks)
+
+    safe_update({
+        "rag_chunks": [
+            {
+                "id": c.get("id"),
+                "section": c.get("section"),
+                "similarity": c.get("similarity"),
+                "snippet": (c.get("chunk_text") or "")[:240],
+            }
+            for c in rag_chunks
+        ],
+        # guarda ambos mensajes (system+user). Si prefieres, guarda solo prompt_msgs[1]["content"]
+        "final_prompt": prompt_msgs,
+    })
+
+    # 5) Generate with Groq (using the SAME prompt)
     gen_span = trace.span(name="groq.generate", input={"type": req.type})
     output_text = await groq_chat(prompt_msgs, temperature=0.5)
     try:
@@ -129,7 +145,7 @@ async def generate(req: GenerateRequest):
     except Exception:
         pass
 
-    # 5) Persist content item
+    # 6) Persist content item
     ins = sb.table("content_items").insert({
         "brand_id": req.brand_id,
         "brand_manual_id": manual_id,
