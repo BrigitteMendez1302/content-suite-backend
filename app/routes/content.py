@@ -74,9 +74,13 @@ async def generate(req: GenerateRequest):
     trace = langfuse.trace(name="module2.creative_engine.generate", input=req.model_dump())
     t0 = time.time()
 
+    trace_output = {}
+
     def safe_update(payload: dict):
+        # merge local
+        trace_output.update(payload)
         try:
-            trace.update(output=payload)
+            trace.update(output=trace_output)
         except Exception:
             pass
 
@@ -135,11 +139,21 @@ async def generate(req: GenerateRequest):
             for c in rag_chunks
         ],
         # guarda ambos mensajes (system+user). Si prefieres, guarda solo prompt_msgs[1]["content"]
-        "final_prompt": prompt_msgs,
+        "final_prompt": {
+            "system": prompt_msgs[0]["content"],
+            "user": prompt_msgs[1]["content"]
+        },
     })
 
     # 5) Generate with Groq (using the SAME prompt)
-    gen_span = trace.span(name="groq.generate", input={"type": req.type})
+    gen_span = trace.span(
+        name="groq.generate",
+        input={"type": req.type,
+                "final_prompt": {
+                "system": prompt_msgs[0]["content"],
+                "user": prompt_msgs[1]["content"]
+         }}
+    )
     output_text = await groq_chat(prompt_msgs, temperature=0.5)
     try:
         gen_span.end(output={"len": len(output_text)})
