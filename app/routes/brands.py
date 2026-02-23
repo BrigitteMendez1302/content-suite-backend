@@ -39,9 +39,15 @@ async def create_manual(brand_id: str, body: dict):
     gen_span = trace.span(name="groq.generate_manual")
     try:
         raw = await generate_brand_manual(body)
-        gen_span.end(output={"raw_len": len(raw)})
+        try:
+            gen_span.end(output={"raw_len": len(raw)})
+        except Exception:
+            pass
     except Exception as e:
-        gen_span.end(output={"error": str(e)})
+        try:
+            gen_span.end(output={"error": str(e)})
+        except Exception:
+            pass
         safe_trace_update({"error": "groq_failed", "detail": str(e)})
         raise
 

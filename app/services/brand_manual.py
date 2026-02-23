@@ -10,6 +10,7 @@ MANUAL_SYSTEM = (
     "- style_rules.reading_level: SOLO 'simple' o 'medium'\n"
     "- style_rules.length_guidelines: objeto/dict\n"
     "- visual_guidelines.*: arrays de strings\n"
+    "- approval_checklist: array de strings (mínimo 8 ítems)\n"
     "Si no tienes información, devuelve listas vacías o {} (NO strings)."
 )
 
@@ -18,8 +19,7 @@ def build_manual_prompt(params: Dict[str, Any]) -> str:
     tone = params["tone"]
     audience = params["audience"]
     brand_name = params.get("brand_name", product)
-
-    extra = params.get("extra_constraints", "")
+    extra = params.get("extra_constraints", "").strip()
 
     schema_hint = """
 Devuelve un JSON con estas claves:
@@ -31,13 +31,15 @@ visual_guidelines{colors[],logo_rules[],typography[],image_style[],notes},
 examples{good[{type,text}],bad[{type,text,why}]},
 approval_checklist[], assumptions[].
 """
+
+    extra_block = f"\n- extra_constraints: {extra}\n" if extra else ""
+
     return f"""
 Parámetros:
 - brand_name: {brand_name}
 - product: {product}
 - tone: {tone}
-- audience: {audience}
-- extra_constraints: {extra}
+- audience: {audience}{extra_block}
 
 {schema_hint}
 
@@ -45,7 +47,13 @@ Reglas:
 - Sé específico en dos/donts y forbidden_terms.
 - Si no tienes guías visuales, deja listas vacías y explica en visual_guidelines.notes.
 - Incluye 2 ejemplos good y 2 bad (con "why").
-"""
+
+Calidad mínima obligatoria:
+- approval_checklist: mínimo 8 ítems verificables tipo checklist (NO puede ser vacío).
+- style_rules.length_guidelines: usa defaults realistas si no se especifica canal:
+  {{ "titulo": "<= 6 palabras", "descripcion": "<= 150 palabras", "guion_15s": "60-90 palabras" }}
+- forbidden_claims: incluye 3-6 claims prohibidos específicos del producto. Si es bebida energética: NO prometer "cura fatiga", "rendimiento garantizado", "tratamiento", "efectos médicos".
+""".strip()
 
 async def generate_brand_manual(params: Dict[str, Any]) -> str:
     messages = [
