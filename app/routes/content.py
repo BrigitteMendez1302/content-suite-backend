@@ -6,6 +6,7 @@ from app.db.supabase_client import get_supabase
 from app.core.langfuse_client import langfuse
 from app.services.embeddings import embed_texts
 from app.services.groq_llm import groq_chat
+from app.services.rerank import rerank_chunks
 
 router = APIRouter(prefix="/content", tags=["content"])
 
@@ -125,18 +126,20 @@ async def generate(req: GenerateRequest):
         safe_update({"error": "rag_insufficient", "chunks": len(rag_chunks)})
         raise HTTPException(status_code=422, detail="RAG insuficiente: no se recuperó contexto suficiente del manual.")
 
+    reranked_chunks = rerank_chunks(rag_chunks, req.type, keep_k=6)
+
     # 4) Build prompt (final) and log it BEFORE generation
-    prompt_msgs = build_generation_prompt(req.type, req.brief, rag_chunks)
+    prompt_msgs = build_generation_prompt(req.type, req.brief, reranked_chunks)
 
     safe_update({
-        "rag_chunks": [
+        "reranked_chunks": [
             {
                 "id": c.get("id"),
                 "section": c.get("section"),
                 "similarity": c.get("similarity"),
                 "snippet": (c.get("chunk_text") or "")[:240],
             }
-            for c in rag_chunks
+            for c in reranked_chunks
         ],
         # guarda ambos mensajes (system+user). Si prefieres, guarda solo prompt_msgs[1]["content"]
         "final_prompt": {
@@ -168,7 +171,7 @@ async def generate(req: GenerateRequest):
         "input_brief": req.brief,
         "output_text": output_text,
         "status": "PENDING",
-        "rag_chunks": rag_chunks
+        "rag_chunks": reranked_chunks
     }).execute()
 
     if not ins.data:
@@ -177,13 +180,13 @@ async def generate(req: GenerateRequest):
 
     content_id = ins.data[0]["id"]
     latency_ms = int((time.time() - t0) * 1000)
-    safe_update({"content_id": content_id, "chunks": len(rag_chunks), "latency_ms": latency_ms})
+    safe_update({"content_id": content_id, "chunks": len(reranked_chunks), "latency_ms": latency_ms})
 
     return {
         "content_id": content_id,
         "status": "PENDING",
         "brand_manual_id": manual_id,
-        "rag_chunks": rag_chunks,
+        "reranked_chunks": reranked_chunks,
         "output_text": output_text,
         "latency_ms": latency_ms,
     }
