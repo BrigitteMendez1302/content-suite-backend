@@ -33,8 +33,20 @@ def audit_image_with_gemini(image_bytes: bytes, mime_type: str, brand_rules_text
         http_options=types.HttpOptions(api_version="v1"),
     )
 
+    rule_gate = """
+    Regla de veredicto (OBLIGATORIA):
+    - Devuelve CHECK solo si puedes validar al menos 2 reglas VISUALES explícitas del manual
+    (visual.colors, visual.logo_rules, visual.typography, visual.image_style).
+    - Si el manual no contiene reglas visuales explícitas suficientes, devuelve FAIL con una violación:
+    {"rule": "Faltan reglas visuales medibles", "evidence": "El manual no define colores/logo/tipografía/estilo de imagen medibles", "fix": "Agregar reglas visuales explícitas (colores permitidos, tamaño mínimo de logo, tipografía, estilo de imagen)"}.
+    - Si una regla NO es auditable solo con imagen (ej: forbidden_terms, length_guidelines), NO la marques como violación:
+    inclúyela en notes como 'no auditable con imagen sin texto'.
+    """
+
     prompt = f"""Eres un auditor de cumplimiento de marca.
     Devuelve SOLO JSON válido con: verdict (CHECK|FAIL), violations[{{"rule","evidence","fix"}}], notes[].
+
+    {rule_gate}
 
     Reglas del manual (RAG):
     {brand_rules_text}
