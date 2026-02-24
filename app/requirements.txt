@@ -4,7 +4,7 @@ pydantic==2.8.2
 pydantic-settings==2.4.0
 python-dotenv==1.0.1
 
-supabase==2.6.0
+supabase>=2.9.0
 
 langfuse==2.40.0
 
