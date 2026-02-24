@@ -34,11 +34,11 @@ def audit_image_with_gemini(image_bytes: bytes, mime_type: str, brand_rules_text
     )
 
     prompt = f"""Eres un auditor de cumplimiento de marca.
-Devuelve SOLO JSON válido con: verdict (CHECK|FAIL), violations[{rule,evidence,fix}], notes[].
+    Devuelve SOLO JSON válido con: verdict (CHECK|FAIL), violations[{{"rule","evidence","fix"}}], notes[].
 
-Reglas del manual (RAG):
-{brand_rules_text}
-"""
+    Reglas del manual (RAG):
+    {brand_rules_text}
+    """
 
     t0 = time.time()
     resp = client.models.generate_content(
