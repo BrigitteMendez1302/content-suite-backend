@@ -23,4 +23,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = None
     OPENAI_EMBED_MODEL: str = "text-embedding-3-small"
 
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+
 settings = Settings()
