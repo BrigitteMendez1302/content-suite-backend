@@ -4,6 +4,8 @@ import time
 from typing import Any, Dict
 from google import genai
 from app.core.config import settings
+from google.genai import types
+
 
 AUDIT_SYSTEM = (
     "Eres un auditor de cumplimiento de marca. "
@@ -26,27 +28,28 @@ def audit_image_with_gemini(image_bytes: bytes, mime_type: str, brand_rules_text
     if not settings.GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY missing")
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(
+        api_key=settings.GEMINI_API_KEY,
+        http_options=types.HttpOptions(api_version="v1"),
+    )
 
-    prompt = f"""{AUDIT_SYSTEM}
+    prompt = f"""Eres un auditor de cumplimiento de marca.
+Devuelve SOLO JSON válido con: verdict (CHECK|FAIL), violations[{rule,evidence,fix}], notes[].
 
-Reglas del manual (extraídas por RAG):
+Reglas del manual (RAG):
 {brand_rules_text}
-
-Instrucciones:
-- Si cumple: verdict=CHECK y notes con 1-3 bullets.
-- Si falla: verdict=FAIL y violations con reglas incumplidas y cómo corregir (acciones concretas).
 """
 
     t0 = time.time()
     resp = client.models.generate_content(
-        model=settings.GEMINI_MODEL,
-        contents=[
-            {"role": "user", "parts": [
+        model=settings.GEMINI_MODEL,   # por ejemplo "gemini-1.5-flash"
+        contents=[{
+            "role": "user",
+            "parts": [
                 {"inline_data": {"mime_type": mime_type, "data": image_bytes}},
                 {"text": prompt},
-            ]}
-        ],
+            ],
+        }],
     )
     latency_ms = int((time.time() - t0) * 1000)
 
