@@ -4,6 +4,7 @@ from app.routes.health import router as health_router
 from app.routes.brands import router as brands_router
 from app.routes.content import router as content_router
 from app.routes.governance import router as governance_router
+from app.routes.me import router as me_router
 
 app = FastAPI(title="Content Suite API (Module I)")
 
@@ -19,3 +20,4 @@ app.include_router(health_router)
 app.include_router(brands_router)
 app.include_router(content_router)
 app.include_router(governance_router)
+app.include_router(me_router)
