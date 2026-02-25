@@ -20,6 +20,25 @@ def build_manual_prompt(params: Dict[str, Any]) -> str:
     audience = params["audience"]
     brand_name = params.get("brand_name", product)
     extra = params.get("extra_constraints", "").strip()
+    vr = params.get("visual_rules") or {}
+    vr_colors = vr.get("colors") or []
+    vr_logo = vr.get("logo_rules") or []
+    vr_typo = vr.get("typography") or []
+    vr_style = vr.get("image_style") or []
+    vr_notes = vr.get("notes") or ""
+
+    visual_block = f"""
+    Visual Rules (FUENTE DE VERDAD DEL USUARIO):
+    - colors: {vr_colors}
+    - logo_rules: {vr_logo}
+    - typography: {vr_typo}
+    - image_style: {vr_style}
+    - notes: {vr_notes}
+
+    Regla NO NEGOCIABLE:
+    - NO inventes reglas visuales nuevas.
+    - Si alguna lista viene vacía, debe permanecer vacía en visual_guidelines y en notes indicar 'MISSING: user must define ...'.
+    """
 
     schema_hint = """
 Devuelve un JSON con estas claves:
@@ -40,6 +59,8 @@ Parámetros:
 - product: {product}
 - tone: {tone}
 - audience: {audience}{extra_block}
+
+{visual_block}
 
 {schema_hint}
 

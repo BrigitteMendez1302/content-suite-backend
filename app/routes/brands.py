@@ -37,6 +37,16 @@ async def create_manual(brand_id: str, body: dict):
 
     # 1) LLM generate manual JSON
     gen_span = trace.span(name="groq.generate_manual")
+
+    sb = get_supabase()
+    vr = sb.table("brand_visual_rules").select("*").eq("brand_id", brand_id).limit(1).execute()
+    visual_rules = vr.data[0] if vr.data else {
+        "colors": [], "logo_rules": [], "typography": [], "image_style": [], "notes": None
+    }
+
+    # Inyecta al body que va al prompt:
+    body = {**body, "visual_rules": visual_rules}
+
     try:
         raw = await generate_brand_manual(body)
         try:
