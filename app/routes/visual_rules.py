@@ -21,7 +21,7 @@ async def get_visual_rules(brand_id: str, profile=Depends(require_roles("creator
     return res.data[0]
 
 @router.put("/{brand_id}/visual-rules")
-async def upsert_visual_rules(brand_id: str, body: VisualRulesBody, profile=Depends(require_roles("creator","approver_b"))):
+async def upsert_visual_rules(brand_id: str, body: VisualRulesBody):
     sb = get_supabase()
     payload = {
         "brand_id": brand_id,
