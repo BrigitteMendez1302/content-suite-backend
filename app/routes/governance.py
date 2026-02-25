@@ -29,17 +29,6 @@ async def inbox(profile=Depends(get_current_profile)):
             .execute()
         )
         return {"items": res.data or []}
-    
-    if role == "approver_b":
-        res = (
-        sb.table("content_items")
-        .select(...)
-        .in_("status", ["PENDING", "APPROVED"])
-        .order("created_at", desc=True)
-        .limit(50)
-        .execute()
-        )
-        return {"items": res.data or []}
 
 
     # approvers see PENDING
