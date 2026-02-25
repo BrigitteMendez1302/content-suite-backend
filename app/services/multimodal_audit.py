@@ -41,6 +41,11 @@ def audit_image_with_gemini(image_bytes: bytes, mime_type: str, brand_rules_text
     {"rule": "Faltan reglas visuales medibles", "evidence": "El manual no define colores/logo/tipografía/estilo de imagen medibles", "fix": "Agregar reglas visuales explícitas (colores permitidos, tamaño mínimo de logo, tipografía, estilo de imagen)"}.
     - Si una regla NO es auditable solo con imagen (ej: forbidden_terms, length_guidelines), NO la marques como violación:
     inclúyela en notes como 'no auditable con imagen sin texto'.
+
+    Consistencia:
+    - Si violations tiene al menos 1 ítem, verdict DEBE ser FAIL.
+    - Solo verdict CHECK si violations está vacío.
+
     """
 
     prompt = f"""Eres un auditor de cumplimiento de marca.

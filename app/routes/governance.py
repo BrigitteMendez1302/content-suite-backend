@@ -143,8 +143,13 @@ async def audit_image(
 
     # Call Gemini multimodal
     audit = audit_image_with_gemini(img_bytes, mime, rules_text)
+    violations = audit.get("violations") or []
 
     verdict = audit.get("verdict", "FAIL")
+
+    if len(violations) > 0:
+        verdict = "FAIL"
+
     report_json = {
         "verdict": verdict,
         "violations": audit.get("violations", []),
