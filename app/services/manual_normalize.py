@@ -6,7 +6,6 @@ def _ensure_list(v: Any) -> list:
     if isinstance(v, list):
         return v
     if isinstance(v, str):
-        # separa por saltos o puntos si te vino en un solo string
         parts = [p.strip(" -•\t") for p in v.replace("\r", "").split("\n")]
         parts = [p for p in parts if p]
         return parts if parts else [v.strip()]
@@ -18,7 +17,6 @@ def _ensure_dict(v: Any) -> dict:
     if isinstance(v, dict):
         return v
     if isinstance(v, str):
-        # fallback: lo dejamos como una key "notes"
         return {"notes": v}
     return {"value": v}
 

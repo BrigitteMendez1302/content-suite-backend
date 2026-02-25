@@ -12,8 +12,6 @@ def _bearer_token(authorization: str | None) -> str:
 async def get_current_user(authorization: str | None = Header(default=None)):
     token = _bearer_token(authorization)
     sb = get_supabase()
-
-    # Use Supabase Auth to fetch user from JWT
     try:
         user_resp = sb.auth.get_user(token)
         user = user_resp.user
@@ -29,7 +27,6 @@ async def get_current_profile(user=Depends(get_current_user)):
     sb = get_supabase()
     pres = sb.table("profiles").select("id,email,role").eq("id", user["id"]).limit(1).execute()
     if not pres.data:
-        # Minimal fallback: auto-create profile as creator (MVP)
         sb.table("profiles").insert({"id": user["id"], "email": user["email"], "role": "creator"}).execute()
         role = "creator"
     else:
