@@ -1,3 +1,26 @@
+"""Content Suite API - Module I: Brand Management and Content Generation.
+
+FastAPI application for managing brand guidelines, generating on-brand content,
+auditing content compliance, and managing approval workflows.
+
+Features:
+    - Brand manual generation with LLM (Groq)
+    - Content generation with RAG (Semantic search + reranking)
+    - Image audit with vision model (Google Gemini)
+    - Approval workflow with role-based access control
+    - Vector embeddings for semantic search (OpenAI)
+    - Observability with Langfuse tracing
+
+Routers:
+    - health: Application health check
+    - brands: Brand CRUD operations
+    - content: Content generation and storage
+    - governance: Approval workflows and decisions
+    - brand_audit: Image compliance auditing
+    - visual_rules: Visual guidelines CRUD
+    - manuals: Brand manual retrieval
+    - me: Current user profile
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.health import router as health_router

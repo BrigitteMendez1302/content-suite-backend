@@ -1,8 +1,40 @@
 from typing import Any, Dict, List, Tuple
 
 def chunk_manual(manual: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """
-    Deterministic chunking: one chunk per meaningful section/list.
+    """Break down a brand manual into semantically meaningful chunks for embeddings.
+
+    Each chunk represents a logical section of the manual (e.g., "tone.dos",
+    "messaging.forbidden_claims") and is designed to be independently embedded
+    and retrieved during RAG operations. Empty sections are skipped.
+
+    Args:
+        manual: A validated brand manual dictionary containing keys like:
+               - tone: {description, dos[], donts[]}
+               - messaging: {value_props[], taglines[], forbidden_claims[], ...}
+               - style_rules: {reading_level, length_guidelines}
+               - visual_guidelines: {colors[], logo_rules[], typography[], ...}
+               - examples: {good[], bad[]}
+               - approval_checklist: []
+               - assumptions: []
+
+    Returns:
+        List[Dict[str, Any]]: List of chunk dictionaries, each with:
+            - 'section': String identifier (e.g., "tone.dos")
+            - 'chunk_text': The actual content to embed
+            - 'metadata': Optional dict for tracking (empty for now)
+
+    Note:
+        - Empty strings or empty sections are skipped entirely.
+        - Multi-item lists are joined with newlines for compact representation.
+        - Examples are formatted as '{type}: {text}' with reasons included
+          for bad examples.
+
+    Example:
+        >>> manual = {"tone": {"description": "...", "dos": [...], ...}, ...}
+        >>> chunks = chunk_manual(manual)
+        >>> len(chunks)
+        >>> chunks[0]['section']
+        'tone.description'
     """
     chunks: List[Dict[str, Any]] = []
 
