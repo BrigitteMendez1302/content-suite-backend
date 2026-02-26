@@ -70,16 +70,26 @@ async def audit_brand_image(
 
     # 5) Multimodal audit
     audit = audit_image_with_gemini(img_bytes, mime, rules_text)
-    violations = audit.get("violations") or []
-    verdict = audit.get("verdict", "FAIL")
 
+    violations = audit.get("violations") or []
+    try:
+        validated_count = int(audit.get("validated_rules_count") or 0)
+    except Exception:
+        validated_count = 0
+
+    # ✅ Veredicto final determinístico
+    verdict = "CHECK"
     if len(violations) > 0:
+        verdict = "FAIL"
+    elif validated_count < 2:
         verdict = "FAIL"
 
     report_json = {
         "verdict": verdict,
-        "violations": audit.get("violations", []),
-        "notes": audit.get("notes", []),
+        "validated_rules_count": validated_count,
+        "validated_rules": audit.get("validated_rules", []) or [],
+        "violations": violations,
+        "notes": audit.get("notes", []) or [],
         "raw": audit.get("_raw", ""),
     }
 

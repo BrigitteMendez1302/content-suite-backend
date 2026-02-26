@@ -10,8 +10,13 @@ from google.genai import types
 AUDIT_SYSTEM = (
     "Eres un auditor de cumplimiento de marca. "
     "Evalúa si la imagen cumple el manual de marca proporcionado. "
-    "Devuelve SOLO JSON válido con claves: verdict, violations, notes. "
-    "verdict: CHECK o FAIL. violations: lista de {rule,evidence,fix}."
+    "Devuelve SOLO JSON válido con claves: "
+    "verdict, validated_rules_count, validated_rules, violations, notes. "
+    "verdict: CHECK o FAIL. "
+    "validated_rules_count: entero. "
+    "validated_rules: lista corta (1-5) de reglas visuales que SÍ pudiste validar. "
+    "violations: lista de {rule,evidence,fix}. "
+    "notes: lista de strings."
 )
 
 def _extract_json(text: str) -> Dict[str, Any]:
@@ -34,22 +39,27 @@ def audit_image_with_gemini(image_bytes: bytes, mime_type: str, brand_rules_text
     )
 
     rule_gate = """
-    Regla de veredicto (OBLIGATORIA):
-    - Devuelve CHECK solo si puedes validar al menos 2 reglas VISUALES explícitas del manual
-    (visual.colors, visual.logo_rules, visual.typography, visual.image_style).
-    - Si el manual no contiene reglas visuales explícitas suficientes, devuelve FAIL con una violación:
-    {"rule": "Faltan reglas visuales medibles", "evidence": "El manual no define colores/logo/tipografía/estilo de imagen medibles", "fix": "Agregar reglas visuales explícitas (colores permitidos, tamaño mínimo de logo, tipografía, estilo de imagen)"}.
-    - Si una regla NO es auditable solo con imagen (ej: forbidden_terms, length_guidelines), NO la marques como violación:
-    inclúyela en notes como 'no auditable con imagen sin texto'.
+    Reglas de veredicto (OBLIGATORIAS):
 
-    Consistencia:
+    1) CHECK mínimo:
+    - Solo puedes proponer CHECK si validas AL MENOS 2 reglas visuales explícitas.
+    - Debes reportar validated_rules_count y validated_rules (máx 5).
+
+    2) Logo condicional:
+    - Clasifica la imagen como "pieza_publicitaria" (post/banner/anuncio con layout/CTA/texto) o "foto_producto" (asset/foto sin layout).
+    - Si es pieza_publicitaria: el logo ES obligatorio y se evalúa contra logo_rules.
+    - Si es foto_producto: NO marques ausencia de logo como violación. En su lugar agrega una nota indicando que el logo no aplica/no se evalúa.
+
+    3) Consistencia:
     - Si violations tiene al menos 1 ítem, verdict DEBE ser FAIL.
-    - Solo verdict CHECK si violations está vacío.
+    - Solo puedes proponer CHECK si violations está vacío.
 
+    4) No-auditable:
+    - No conviertas en violaciones reglas no evaluables solo con imagen (texto, claims, reading level, etc.). Menciónalas en notes.
     """
 
-    prompt = f"""Eres un auditor de cumplimiento de marca.
-    Devuelve SOLO JSON válido con: verdict (CHECK|FAIL), violations[{{"rule","evidence","fix"}}], notes[].
+    prompt = f"""
+    {AUDIT_SYSTEM}
 
     {rule_gate}
 
